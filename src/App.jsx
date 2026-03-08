@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Users, DollarSign, TrendingUp, Package, Bell, Search, User, Settings, LogOut, X } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, Package, Bell, Search, User, Settings, LogOut, X, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const data = [
@@ -39,7 +39,7 @@ const NexusLogo = () => (
   </svg>
 );
 
-const Header = ({ busca, setBusca, notifications, temNotificacao, setTemNotificacao }) => {
+const Header = ({ busca, setBusca, notifications, temNotificacao, setTemNotificacao, setTelaAtiva, handleLogout }) => {
   const [menuAberto, setMenuAberto] = useState(false);
   const [perfilAberto, setPerfilAberto] = useState(false);
   const menuRef = useRef(null);
@@ -54,9 +54,14 @@ const Header = ({ busca, setBusca, notifications, temNotificacao, setTemNotifica
     return () => document.removeEventListener('mousedown', handleClickFora);
   }, []);
 
+  const navegarPara = (tela) => {
+    setTelaAtiva(tela);
+    setPerfilAberto(false);
+  };
+
   return (
     <nav className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
-      <div className="flex items-center justify-between w-full lg:w-auto">
+      <div className="flex items-center justify-between w-full lg:w-auto cursor-pointer" onClick={() => setTelaAtiva('dashboard')}>
         <div className="flex items-center gap-3">
           <NexusLogo />
           <div>
@@ -65,7 +70,7 @@ const Header = ({ busca, setBusca, notifications, temNotificacao, setTemNotifica
           </div>
         </div>
         <div className="lg:hidden" ref={perfilRef}>
-           <button onClick={() => setPerfilAberto(!perfilAberto)} className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs">MA</button>
+           <button onClick={(e) => { e.stopPropagation(); setPerfilAberto(!perfilAberto); }} className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs">MA</button>
         </div>
       </div>
 
@@ -117,13 +122,13 @@ const Header = ({ busca, setBusca, notifications, temNotificacao, setTemNotifica
               {perfilAberto && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 py-2">
                   <div className="px-4 py-3 border-b border-slate-50 mb-1">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">Administrador</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Administrador</p>
                     <p className="text-sm font-bold text-slate-800">Marcos Amaral</p>
                   </div>
-                  <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors"><User size={16} /> Perfil</button>
-                  <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors"><Settings size={16} /> Configs</button>
+                  <button onClick={() => navegarPara('perfil')} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors"><User size={16} /> Perfil</button>
+                  <button onClick={() => navegarPara('configs')} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors"><Settings size={16} /> Configs</button>
                   <div className="border-t mt-1 pt-1">
-                    <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 font-medium transition-colors"><LogOut size={16} /> Sair</button>
+                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 font-medium transition-colors"><LogOut size={16} /> Sair</button>
                   </div>
                 </motion.div>
               )}
@@ -155,8 +160,28 @@ const Card = ({ title, value, icon, trend, color, bg, index }) => (
 function App() {
   const [busca, setBusca] = useState("");
   const [temNotificacao, setTemNotificacao] = useState(true);
+  const [telaAtiva, setTelaAtiva] = useState('dashboard');
+  const [estaLogado, setEstaLogado] = useState(true);
 
   const transacoesFiltradas = transactions.filter(t => t.customer.toLowerCase().includes(busca.toLowerCase()));
+
+  const handleLogout = () => {
+    setEstaLogado(false);
+    console.log("Sessão encerrada localmente.");
+  };
+
+  if (!estaLogado) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-sm">
+          <div className="flex justify-center mb-6"><NexusLogo /></div>
+          <h2 className="text-2xl font-bold mb-2">Até logo, Marcos!</h2>
+          <p className="text-slate-500 mb-8">Você saiu do Nexus Dash com segurança.</p>
+          <button onClick={() => setEstaLogado(true)} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors">Entrar novamente</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-200 p-4 md:p-8 lg:p-12 font-sans text-slate-900 overflow-x-hidden">
@@ -165,84 +190,83 @@ function App() {
         setBusca={setBusca} 
         notifications={notificationsData} 
         temNotificacao={temNotificacao} 
-        setTemNotificacao={setTemNotificacao} 
+        setTemNotificacao={setTemNotificacao}
+        setTelaAtiva={setTelaAtiva}
+        handleLogout={handleLogout}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
-        <Card index={0} title="Receita" value="R$ 45.231" icon={<DollarSign />} trend="+12%" color="text-blue-600" bg="bg-blue-50" />
-        <Card index={1} title="Clientes" value="+2.350" icon={<Users />} trend="+5.4%" color="text-emerald-600" bg="bg-emerald-50" />
-        <Card index={2} title="Pedidos" value="1.234" icon={<Package />} trend="-2%" color="text-orange-600" bg="bg-orange-50" />
-        <Card index={3} title="Conversão" value="4.35%" icon={<TrendingUp />} trend="+1.2%" color="text-purple-600" bg="bg-purple-50" />
-      </div>
+      <AnimatePresence mode="wait">
+        {telaAtiva === 'dashboard' && (
+          <motion.div key="dash" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
+              <Card index={0} title="Receita" value="R$ 45.231" icon={<DollarSign />} trend="+12%" color="text-blue-600" bg="bg-blue-50" />
+              <Card index={1} title="Clientes" value="+2.350" icon={<Users />} trend="+5.4%" color="text-emerald-600" bg="bg-emerald-50" />
+              <Card index={2} title="Pedidos" value="1.234" icon={<Package />} trend="-2%" color="text-orange-600" bg="bg-orange-50" />
+              <Card index={3} title="Conversão" value="4.35%" icon={<TrendingUp />} trend="+1.2%" color="text-purple-600" bg="bg-purple-50" />
+            </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:gap-10">
-        <motion.div className="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-            <h3 className="text-lg font-bold">Desempenho Semanal</h3>
-            <select className="w-full sm:w-auto bg-slate-50 text-sm font-medium rounded-lg px-3 py-2 outline-none border border-slate-100">
-              <option>Últimos 7 dias</option>
-              <option>Últimos 30 dias</option>
-            </select>
-          </div>
-          <div className="h-62.5 md:h-87.5 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data}>
-                <defs>
-                  <linearGradient id="colorVendas" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} width={35} />
-                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                <Area type="monotone" dataKey="vendas" stroke="#3b82f6" strokeWidth={3} fill="url(#colorVendas)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
+            <div className="grid grid-cols-1 gap-6 lg:gap-10">
+              <div className="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                  <h3 className="text-lg font-bold">Desempenho Semanal</h3>
+                  <select className="w-full sm:w-auto bg-slate-50 text-sm font-medium rounded-lg px-3 py-2 outline-none border border-slate-100">
+                    <option>Últimos 7 dias</option>
+                    <option>Últimos 30 dias</option>
+                  </select>
+                </div>
+                <div className="h-62.5 md:h-87.5 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={data}>
+                      <defs>
+                        <linearGradient id="colorVendas" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} />
+                      <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} width={35} />
+                      <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                      <Area type="monotone" dataKey="vendas" stroke="#3b82f6" strokeWidth={3} fill="url(#colorVendas)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
-        <motion.div className="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-slate-100">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-bold text-slate-800">Transações</h3>
-            <span className="text-[10px] sm:text-xs font-medium text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
-              {transacoesFiltradas.length} itens
-            </span>
-          </div>
-          <div className="relative overflow-x-auto -mx-5 md:mx-0">
-            <table className="min-w-full border-separate border-spacing-y-3">
-              <thead>
-                <tr className="text-slate-400 text-[10px] md:text-sm uppercase tracking-wider text-left">
-                  <th className="font-medium pb-2 pl-2">Cliente</th>
-                  <th className="font-medium pb-2 hidden sm:table-cell">Data</th>
-                  <th className="font-medium pb-2">Valor</th>
-                  <th className="font-medium pb-2 text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transacoesFiltradas.map((t) => (
-                  <tr key={t.id} className="group hover:bg-slate-50 transition-colors">
-                    <td className="py-3 pl-2 rounded-l-2xl border-y border-l border-transparent group-hover:border-slate-100">
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-[10px] md:text-xs shrink-0 ${t.color.split(' ')[0]} ${t.color.split(' ')[1]}`}>
-                          {t.initial}
-                        </div>
-                        <span className="font-semibold text-slate-700 text-xs md:text-sm truncate max-w-20 md:max-w-none">{t.customer}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 text-[10px] md:text-sm text-slate-500 border-y border-transparent hidden sm:table-cell">{t.date}</td>
-                    <td className="py-3 font-bold text-slate-800 text-xs md:text-sm border-y border-transparent">{t.amount}</td>
-                    <td className="py-3 pr-2 text-right rounded-r-2xl border-y border-r border-transparent">
-                      <span className={`px-2 py-1 rounded-full text-[9px] md:text-xs font-bold whitespace-nowrap ${t.color}`}>{t.status}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
-      </div>
+        {telaAtiva === 'perfil' && (
+          <motion.div key="perfil" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+            <button onClick={() => setTelaAtiva('dashboard')} className="flex items-center gap-2 text-blue-600 font-medium mb-6 hover:underline"><ArrowLeft size={16}/> Voltar ao início</button>
+            <h2 className="text-2xl font-bold mb-4">Seu Perfil</h2>
+            <div className="flex items-center gap-6 mb-8 p-6 bg-slate-50 rounded-2xl">
+              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">MA</div>
+              <div>
+                <p className="text-xl font-bold">Marcos Amaral</p>
+                <p className="text-slate-500 font-medium">marcos@nexus.com</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {telaAtiva === 'configs' && (
+          <motion.div key="configs" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+            <button onClick={() => setTelaAtiva('dashboard')} className="flex items-center gap-2 text-blue-600 font-medium mb-6 hover:underline"><ArrowLeft size={16}/> Voltar ao início</button>
+            <h2 className="text-2xl font-bold mb-4">Configurações</h2>
+            <div className="space-y-4">
+              <div className="p-4 border border-slate-100 rounded-xl flex justify-between items-center">
+                <span>Notificações por e-mail</span>
+                <div className="w-10 h-5 bg-blue-600 rounded-full"></div>
+              </div>
+              <div className="p-4 border border-slate-100 rounded-xl flex justify-between items-center">
+                <span>Modo Escuro</span>
+                <div className="w-10 h-5 bg-slate-200 rounded-full"></div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
